@@ -202,26 +202,47 @@ void main(void) {
   POKE(0xD021,0);
 
   // Clear colour RAM
-  for(scr=0;scr<512;scr++)
-     colourram[scr]=0;
+  for(scr=0; scr<512; scr++) {
+
+    colourram[scr] = 0;
+  
+  }
 
   // Initialise the screen RAM
   n=0x1000;
-  for (x=0;x<40;x++)
-    for(y=0;y<25;y++) {
+  for (x=0; x<40; x++) {
+    
+    for(y=0; y<25; y++) {
+      
       screen[x+y*40U] = n++;
-      n&=0x1fff;
+      n& = 0x1fff;
+    
     }
+
+  }
 
   // Clear pixel memory
   lfill(0x40000L,0,320*200);
 
   while (1) {
-    x=x+1; if (x>319) x=0;
-    y=y+1; if (y>199) y=0;
-    lpoke(0x40000L+(x&7)+(y*8U)+(x>>3U)*(25*64U),1);
-  }
 
+    x=x+1;
+    if (x > 319) {
+      
+      x=0;
+    
+    }
+    
+    y=y+1;
+    if (y > 199) {
+      
+      y=0;
+    
+    }
+    
+    lpoke(0x40000L+(x&7)+(y*8U)+(x>>3U)*(25*64U),1);
+  
+  }
 
   while(1) {
 
