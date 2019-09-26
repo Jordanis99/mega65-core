@@ -1,3 +1,4 @@
+
 /*
   Simple "colour in the screen in your colour" game as
   demo of C65.
@@ -155,18 +156,24 @@ unsigned char needed[25][5] = {{ 0x01, 0x80, 0x80, /*PR*/0x65, 0xC8 },
               /*24*/      { 0x01, 0x80, 0x80, 0x64, 0xC8 },
               /*25*/      { 0x01, 0x80, 0x80, 0x64, 0xC8 }};
 
-  unsigned short *colourram = 0xD800U;
-  unsigned short *screen = 0xc000U;
+  unsigned short *screen = 0xA000U;
   int scr;
-  unsigned int x;
-  unsigned int y;
   
-  /* STEP-LADDER SUBROUTINE
-  int l = 0;
-  char z = '-';
-  */
+  unsigned int x,x1;
+  unsigned int y;
+  unsigned char c;
+  unsigned long a;
+  int n = 0;
 
- int n=0;
+void plot_pixel()
+{
+    x1=x>>1;
+    a=0x40000L + (x&7) + (y*8U) + (x>>3U) * (50*64U);
+    v=lpeek(a);
+    if (x&1) { v&=0xf0; v|=c; }
+    else { v&=0xf; v|=(c<<4); }
+    lpoke(0x40000L + (x&7) + (y*8U) + (x>>3U) * (50*64U),1);
+}
 
 void main(void) {
 
@@ -189,33 +196,30 @@ void main(void) {
   // also enable full colour chars for chars >$FF
   POKE(0xd054,0x05);
 
-  // Move screen to $C000
+  // Move screen to $A000
   POKE(0xD060,0x00);
-  POKE(0xD061,0xc0);
+  POKE(0xD061,0xA0);
 
   // Logical lines are 80 bytes long
-  POKE(0xD058,80);
-  POKE(0xD05E,40);
+  POKE(0xD058,90);
+  POKE(0xD05E,45);
 
   // Make screen background black
   POKE(0xD020,0);
   POKE(0xD021,0);
 
   // Clear colour RAM
-  for(scr=0; scr<512; scr++) {
-
-    colourram[scr] = 0;
-  
-  }
+  lfill(0xff80000U,0,30*50*2);
 
   // Initialise the screen RAM
-  n=0x1000;
-  for (x=0; x<40; x++) {
+  n = 0x1000;
+  lfill((unsigned long)screen,0,30*50*2);
+  for (x=0; x<30; x++) {
     
-    for(y=0; y<25; y++) {
+    for(y=0; y<50; y++) {
       
-      screen[x+y*40U] = n++;
-      n& = 0x1fff;
+      screen[x + y * 90U] = n++;
+      n&0x1fff;
     
     }
 
@@ -226,22 +230,22 @@ void main(void) {
 
   while (1) {
 
-    x=x+1;
+    x = x + 1;
     if (x > 319) {
-      
-      x=0;
+    
+      x = 0;
     
     }
     
-    y=y+1;
+    y = y + 1;
     if (y > 199) {
       
-      y=0;
+      y = 0;
     
     }
-    
-    lpoke(0x40000L+(x&7)+(y*8U)+(x>>3U)*(25*64U),1);
-  
+
+    c=1;
+    plot_pixel();
   }
 
   while(1) {
@@ -256,7 +260,7 @@ void main(void) {
     //v=PEEK(0xd0e0U);
     v = needed[x][y];
 
-    if(v) {      
+    if (v) {
 
       frame[0] = frame[1];
       frame[1] = frame[2];
@@ -277,47 +281,41 @@ void main(void) {
             
             else fnum++;
 
-	      switch(fnum) {
+	          switch(fnum) {
 	      
-          case 0: 
-            prh = frame[3];
-            break;
+              case 0:
+                prh = frame[3];
+                break;
 	        
-          case 1:
-		        if (flast == 0) {
+              case 1:
+		            if (flast == 0) {
 		          
-              pr = (frame[3]&0x7f); //+((prh&3)<<7);
+                  pr = (frame[3]&0x7f); //+((prh&3)<<7);
 		        
-            }
-		        break;
+                }
+		            break;
 	        
-          case 2:
-		        if (flast == 1) {
+              case 2:
+		            if (flast == 1) {
               
-              //printf("pr = %d\n",pr);
-              
-              /* STEP-LADDER SUBROUTINE
-              for (l=0; l<x; l++) {
-                printf("%c", z);
-              }
-              printf("\n  ");
-              */
+                  //printf("pr = %d\n",pr);
 		        
-            }
-            spo2 = frame[3];
-		        break;
-	        case 3:
-		        if (flast == 2)
-		        //printf("spo2 = %d\n",spo2);
-		        break;
-	      }
+                }
+                spo2 = frame[3];
+		            break;
+	            case 3:
+		            if (flast == 2)
+		            //printf("spo2 = %d\n",spo2);
+		            break;
+	          }
 
-	    }
+	        }
+
+      }
 
     }
-    }
 
-    if (y%5 == 0) {
+    if (y % 5 == 0) {
 
       x++;
       y = 0;
