@@ -201,6 +201,7 @@ unsigned char needed[25][5] = {{ 0x01, 0x80, 0x80, /*PR*/0x65, 0xC8 },
 void plot_pixel()
 {
     x1=x>>1;
+    x1=0;
     a=0x40000L + (x1&7) + (y*8U) + (x1>>3U) * (50*64U);
     v=lpeek(a);
     if ((x&1)) { v&=0xf0; v|=c; }
