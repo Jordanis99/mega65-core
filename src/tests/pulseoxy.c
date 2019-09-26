@@ -17,6 +17,13 @@ unsigned short i;
 
 struct dmagic_dmalist {
 
+  unsigned char option_0b;
+  unsigned char option_80;
+  unsigned char source_mb;
+  unsigned char option_81;
+  unsigned char dest_mb;
+  unsigned char end_of_options;
+
   // F018B format DMA request
   unsigned char command;
   unsigned int count;
@@ -37,15 +44,19 @@ void do_dma(void) {
   // Now run DMA job (to and from anywhere, and list is in low 1MB)
   POKE(0xd702U,0);
   POKE(0xd701U,(((unsigned int)&dmalist) >> 8));
-  POKE(0xd700U,((unsigned int)&dmalist)&0xff); // triggers enhanced DMA
+  POKE(0xd705U,((unsigned int)&dmalist)&0xff); // triggers enhanced DMA
 
-  POKE(0x0401U,(((unsigned int)&dmalist) >> 8));
-  POKE(0x0400U,((unsigned int)&dmalist)&0xff); // triggers enhanced DMA
-  
 }
 
 
 void lpoke(long address, unsigned char value) {
+
+  dmalist.option_0b=0x0b;
+  dmalist.option_80=0x80;
+  dmalist.source_mb=0;
+  dmalist.option_81=0x81;
+  dmalist.dest_mb=address>>20;
+  dmalist.end_of_options=0x00;
 
   dma_byte = value;
   dmalist.command = 0x00; // copy
@@ -63,6 +74,13 @@ void lpoke(long address, unsigned char value) {
 }
 
 unsigned char lpeek(long address) {
+
+  dmalist.option_0b=0x0b;
+  dmalist.option_80=0x80;
+  dmalist.source_mb=address>>20;
+  dmalist.option_81=0x81;
+  dmalist.dest_mb=0;
+  dmalist.end_of_options=0x00;
 
   dmalist.command = 0x00; // copy
   dmalist.count = 1;
@@ -83,6 +101,13 @@ unsigned char lpeek(long address) {
 
 void lcopy(long source_address, long destination_address, unsigned int count) {
 
+  dmalist.option_0b=0x0b;
+  dmalist.option_80=0x80;
+  dmalist.source_mb=source_address>>20;
+  dmalist.option_81=0x81;
+  dmalist.dest_mb=destination_address>>20;
+  dmalist.end_of_options=0x00;
+
   dmalist.command = 0x00; // copy
   dmalist.count = count;
   dmalist.sub_cmd = 0;
@@ -102,6 +127,13 @@ void lcopy(long source_address, long destination_address, unsigned int count) {
 }
 
 void lfill(long destination_address, unsigned char value, unsigned int count) {
+
+  dmalist.option_0b=0x0b;
+  dmalist.option_80=0x80;
+  dmalist.source_mb=0;
+  dmalist.option_81=0x81;
+  dmalist.dest_mb=destination_address>>20;
+  dmalist.end_of_options=0x00;
 
   dmalist.command = 0x03; // fill
   dmalist.sub_cmd = 0;
@@ -168,11 +200,11 @@ unsigned char needed[25][5] = {{ 0x01, 0x80, 0x80, /*PR*/0x65, 0xC8 },
 void plot_pixel()
 {
     x1=x>>1;
-    a=0x40000L + (x&7) + (y*8U) + (x>>3U) * (50*64U);
+    a=0x40000L + (x1&7) + (y*8U) + (x1>>3U) * (50*64U);
     v=lpeek(a);
-    if (x&1) { v&=0xf0; v|=c; }
+    if ((x&1)) { v&=0xf0; v|=c; }
     else { v&=0xf; v|=(c<<4); }
-    lpoke(0x40000L + (x&7) + (y*8U) + (x>>3U) * (50*64U),1);
+    lpoke(a,v);
 }
 
 void main(void) {
@@ -209,7 +241,9 @@ void main(void) {
   POKE(0xD021,0);
 
   // Clear colour RAM
-  lfill(0xff80000U,0,30*50*2);
+  lfill(0xff80000L,0,30*50*2);
+
+  while(1) continue;
 
   // Initialise the screen RAM
   n = 0x1000;
@@ -232,22 +266,22 @@ void main(void) {
 
   while (1) {
 
-    x = x + 1;
-    if (x > 319) {
+    //x = x + 1;
+    //if (x > 319) {
     
       x = 0;
     
-    }
+    //}
     
-    y = y + 1;
-    if (y > 199) {
+    y = y + 2;
+    if (y > 399) {
       
       y = 0;
     
     }
 
     c=1;
-//    plot_pixel();
+    plot_pixel();
   }
 
   while(1) {
