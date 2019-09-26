@@ -201,13 +201,15 @@ unsigned char needed[25][5] = {{ 0x01, 0x80, 0x80, /*PR*/0x65, 0xC8 },
 void plot_pixel()
 {
     x1=x>>1;
-    x1=0;
-    a=0x40000L + (x1&7) + (y*8U) + (x1>>3U) * (50*64U);
+    a=0x40000L + (x1&7) + (y*8U) + (x1>>3L) * (50*64L);
     v=lpeek(a);
-    if ((x&1)) { v&=0xf0; v|=c; }
-    else { v&=0xf; v|=(c<<4); }
-    v=1;
-    lpoke(a,1);
+    v=0;
+   if (!(x&1)) 
+   { v&=0xf0; v|=c; }
+    else 
+   { v&=0xf; v|=(c<<4); }
+
+    lpoke(a,v);
 }
 
 void main(void) {
@@ -215,13 +217,12 @@ void main(void) {
   // Fast CPU
   POKE(0,65);
 
-  // High res in X and Y directions
-  POKE(0xD031U,0x88);
-
   // Enable access to serial port and other devices
   POKE(53295L,0x47);
   POKE(53295L,0x53);
 
+  // High res in X and Y directions
+  POKE(0xD031U,0x88);
 
   // Set serial port speed to 9600
   POKE(0xd0e6U,0x46);
@@ -248,7 +249,7 @@ void main(void) {
   POKE(0xD021,0);
 
   // Clear colour RAM and set correct bits for showing full colour chars
-  lfill(0xff80000L,0x08,30*50*2);
+  lfill(0xff80000L,0x08,45*50*2);
 
   // Initialise the screen RAM
   n = 0x1000;
@@ -265,27 +266,37 @@ void main(void) {
 
   }
 
+  for (x=30; x<45; x++) {
+    
+    for(y=0; y<50; y++) {
+      screen[x + y * 45U] = 0;
+      lpoke(0xff80000L+x*2+y*90U+0,0);
+      lpoke(0xff80000L+x*2+y*90U+1,1);
+    }
+  }
+
   // Clear pixel memory
   lfill(0x40000L,0,0xFFFF);
- lfill(0x4FFFFL,0,0xFFFF);
+  lfill(0x50000L,0,0xFFFF);
 
+  x=0; y=0;
   while (1) {
 
     x = x + 1;
-    if (x > 319) {
+    if (x > 477) {
     
       x = 0;
     
     }
     
-    y = y + 2;
+    y = y + 1;
     if (y > 399) {
       
       y = 0;
     
     }
 
-    c=1;
+    c=x&0xf;
     plot_pixel();
 
   }
