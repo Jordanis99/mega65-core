@@ -43,6 +43,7 @@ void do_dma(void) {
 
   // Now run DMA job (to and from anywhere, and list is in low 1MB)
   POKE(0xd702U,0);
+  POKE(0xD704U,0x00);
   POKE(0xd701U,(((unsigned int)&dmalist) >> 8));
   POKE(0xd705U,((unsigned int)&dmalist)&0xff); // triggers enhanced DMA
 
@@ -66,7 +67,7 @@ void lpoke(long address, unsigned char value) {
   dmalist.source_addr = (unsigned int)&dma_byte;
   dmalist.source_bank = 0;
   dmalist.dest_addr = address&0xffff;
-  dmalist.dest_bank = (address >> 16);
+  dmalist.dest_bank = (address >> 16)&0xf;
 
   do_dma(); 
   return;
@@ -85,11 +86,11 @@ unsigned char lpeek(long address) {
   dmalist.command = 0x00; // copy
   dmalist.count = 1;
   dmalist.source_addr = address&0xffff;
-  dmalist.source_bank = (address >> 16)&0x7f;
+  dmalist.source_bank = (address >> 16)&0x0f;
   dmalist.dest_addr = (unsigned int)&dma_byte;
   dmalist.source_bank = 0;
   dmalist.dest_addr = address&0xffff;
-  dmalist.dest_bank = (address >> 16)&0x7f;
+  dmalist.dest_bank = (address >> 16)&0x0f;
   // Make list work on either old or new DMAgic
   dmalist.sub_cmd = 0;
   dmalist.modulo = 0;
@@ -140,7 +141,7 @@ void lfill(long destination_address, unsigned char value, unsigned int count) {
   dmalist.count = count;
   dmalist.source_addr = value;
   dmalist.dest_addr = destination_address&0xffff;
-  dmalist.dest_bank = (destination_address >> 16)&0x7f;
+  dmalist.dest_bank = (destination_address >> 16)&0x0f;
   if (destination_address >= 0xd000 && destination_address < 0xe000)
     dmalist.dest_bank |= 0x80;
 
@@ -204,7 +205,8 @@ void plot_pixel()
     v=lpeek(a);
     if ((x&1)) { v&=0xf0; v|=c; }
     else { v&=0xf; v|=(c<<4); }
-    lpoke(a,v);
+    v=1;
+    lpoke(a,1);
 }
 
 void main(void) {
@@ -212,9 +214,13 @@ void main(void) {
   // Fast CPU
   POKE(0,65);
 
+  // High res in X and Y directions
+  POKE(0xD031U,0x88);
+
   // Enable access to serial port and other devices
   POKE(53295L,0x47);
   POKE(53295L,0x53);
+
 
   // Set serial port speed to 9600
   POKE(0xd0e6U,0x46);
@@ -240,10 +246,8 @@ void main(void) {
   POKE(0xD020,0);
   POKE(0xD021,0);
 
-  // Clear colour RAM
-  lfill(0xff80000L,0,30*50*2);
-
-  while(1) continue;
+  // Clear colour RAM and set correct bits for showing full colour chars
+  lfill(0xff80000L,0x08,30*50*2);
 
   // Initialise the screen RAM
   n = 0x1000;
@@ -266,12 +270,12 @@ void main(void) {
 
   while (1) {
 
-    //x = x + 1;
-    //if (x > 319) {
+    x = x + 1;
+    if (x > 319) {
     
       x = 0;
     
-    //}
+    }
     
     y = y + 2;
     if (y > 399) {
@@ -282,9 +286,11 @@ void main(void) {
 
     c=1;
     plot_pixel();
+
   }
 
   while(1) {
+
 
     if (x == 24 && y == 5) {
 
