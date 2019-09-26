@@ -218,15 +218,17 @@ void main(void) {
     
     for(y=0; y<50; y++) {
       
-      screen[x + y * 90U] = n++;
-      n&0x1fff;
+      screen[x + y * 45U] = n;
+      n++;
+      n=n&0x1fff;
     
     }
 
   }
 
   // Clear pixel memory
-  lfill(0x40000L,0,320*200);
+  lfill(0x40000L,0,0xFFFF);
+ lfill(0x4FFFFL,0,0xFFFF);
 
   while (1) {
 
