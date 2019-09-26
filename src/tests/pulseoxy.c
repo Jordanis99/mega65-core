@@ -247,7 +247,7 @@ void main(void) {
     }
 
     c=1;
-    plot_pixel();
+//    plot_pixel();
   }
 
   while(1) {
