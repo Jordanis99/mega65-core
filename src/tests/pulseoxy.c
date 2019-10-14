@@ -49,7 +49,6 @@ void do_dma(void) {
 
 }
 
-
 void lpoke(long address, unsigned char value) {
 
   dmalist.option_0b=0x0b;
@@ -152,6 +151,7 @@ void lfill(long destination_address, unsigned char value, unsigned int count) {
 
 unsigned char offset = 0;
 unsigned char v;
+unsigned char v1;
 
 unsigned char frame[5];
 
@@ -194,22 +194,70 @@ unsigned char needed[25][5] = {{ 0x01, 0x80, 0x80, /*PR*/0x65, 0xC8 },
   
   unsigned int x,x1;
   unsigned int y;
+
+  unsigned int z;
+
   unsigned char c;
   unsigned long a;
   int n = 0;
 
-void plot_pixel()
-{
-    x1=x>>1;
-    a=0x40000L + (x1&7) + (y*8U) + (x1>>3L) * (50*64L);
-    v=lpeek(a);
-    v=0;
-   if (!(x&1)) 
-   { v&=0xf0; v|=c; }
-    else 
-   { v&=0xf; v|=(c<<4); }
+void plot_pixel() {
+  
+  // Integer halving the number with bitwise shift
+  x1 = x>>1;
+  
+  // Pixel memory address location
+  a = 0x40000L + 
+  // Bitwise AND with 7 to keep resulting value below 4 bits
+  (x1&7) +
+  // Multiply y with unsigned int 8 because of character size
+  (y*8U) +
+  // Bitwise shift by 3 (long)
+  (x1>>3L) *
+  // Screen dimension multiplication
+  (50*64L);
 
-    lpoke(a,v);
+  /* Assign 2 bytes of memory at address value (of a) before re-assigning to 0. This seems redundant.
+  v = lpeek(a); */ 
+  
+  // Assign v to 0
+  v = 0;
+  
+  // Replacement for modulus (runs statement if odd)
+  if (!(x&1)) { 
+    
+    // 
+    v &= 0xf0;
+    v |= c; 
+    
+  } 
+  // Else runs if even
+  else { 
+    
+    v &= 0xf;
+    v |= (c<<4);
+  
+  }
+
+  // Initially has v instead of 0x01
+  if (y == 198) {
+  
+    lpoke(a,0x11);
+  
+  }
+  else if (y == 297) {
+
+    lpoke(a,0x22);
+
+  }
+  else {
+
+    lpoke(a,0x33);
+
+  }
+
+  //lpoke(0x40322L,0x03);
+
 }
 
 void main(void) {
@@ -279,24 +327,29 @@ void main(void) {
   lfill(0x40000L,0,0xFFFF);
   lfill(0x50000L,0,0xFFFF);
 
-  x=0; y=0;
+  x = 0; 
+  y = 99;
+  z = 45;
+  n = 0;
+  
   while (1) {
 
     x = x + 1;
     if (x > 477) {
     
       x = 0;
-    
+          
     }
     
-    y = y + 1;
-    if (y > 399) {
+    y = y + 99;
+    if (y > 395) {
       
-      y = 0;
+      y = 99;
     
     }
-
-    c=x&0xf;
+    
+    n++;
+    c = n>>8;
     plot_pixel();
 
   }
